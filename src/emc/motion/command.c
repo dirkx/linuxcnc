@@ -654,7 +654,8 @@ void emcmotCommandHandler_locked(void *arg, long servo_period)
 	                            emcmotCommand->latch_vel,
 	                            emcmotCommand->flags,
 	                            emcmotCommand->home_sequence,
-	                            emcmotCommand->volatile_home
+	                            emcmotCommand->volatile_home,
+				    emcmotCommand->home_dogbone
 	                           );
 	    break;
 
