@@ -2230,6 +2230,8 @@ static void update_status(void)
 	joint_status->min_pos_limit = joint->min_pos_limit;
 	joint_status->min_ferror = joint->min_ferror;
 	joint_status->max_ferror = joint->max_ferror;
+//	joint_status->home_offset = joint->home_offset;
+	joint_status->motor_offset = joint->motor_offset;
     }
     if (get_allhomed()) {
         hal_set_bool(emcmot_hal_data->is_all_homed, 1);

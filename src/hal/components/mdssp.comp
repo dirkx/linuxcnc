@@ -1,0 +1,118 @@
+component mdssp "MDS-A/B/C encoder interface";
+description """
+""";
+
+author "Dmitry Yurtaev dmitry@yurtaev.com";
+license "GPL";
+
+param r signed cpr = 23040000 "command/feedback resolution";
+pin in  signed spindle-counts-in "raw 32-bit feedback position";
+
+pin in  bit    spindle-oriented-in;
+pin in  bit    spindle-orient-in "from spindle.0.orient";
+pin in  bit    spindle-locked-in "from spindle.0.locked";
+pin out bit    orient-out "to servo-XX.orient";
+
+pin out float revs "spindle position output, in revolution";
+pin io  bit index-request;
+
+pin in float speed-in "from spindle.X.speed-out";
+param rw float maxv = 1000;
+pin out float speed-out-abs;
+pin in  bit at-speed-in;
+pin out bit at-speed-out;
+pin out bit fwd;
+pin out bit rev;
+
+pin in float pos-fb-in;
+pin out float pos-cmd-out;
+pin in float master-pos-cmd-in;
+pin in bit servo-on-in;
+pin out bit servo-on-out;
+pin in bit slave-on-in;
+pin out bit mode4;
+
+variable float speed;	// ramped speed
+
+variable int64_t counter;
+variable int64_t offset;
+variable int was_oriented;
+variable int waiting_index;
+variable int64_t prev_index;
+variable int64_t next_index;
+
+function _;
+;;
+
+#include "rtapi_math.h"
+
+float delta = speed_in - speed;
+if (delta > maxv * fperiod) delta = maxv * fperiod;
+if (delta < -maxv * fperiod) delta = -maxv * fperiod;
+speed += delta;
+speed_out_abs = fabs(speed);
+fwd = speed > 0.01;
+rev = speed < -0.01;
+at_speed_out = fabs(speed_in - speed) < 1 && (at_speed_in || servo_on_out || fabs(speed_in) < 0.1);
+
+if (slave_on_in) {
+	pos_cmd_out = -master_pos_cmd_in;
+} else if (servo_on_in && (fwd || rev)) {
+	pos_cmd_out += speed / 60 * fperiod;
+} else {
+	pos_cmd_out = pos_fb_in;
+}
+
+mode4 = servo_on_out = (slave_on_in || servo_on_in) ? 1 : 0;
+
+
+// expand position counter to 64 bits
+int64_t d = (int64_t)(uint32_t)spindle_counts_in - (uint32_t)counter;
+if (d > 0x7fffffffLL) counter -= 0x100000000LL;
+else if (d < -0x7fffffffLL) counter += 0x100000000LL;
+counter = (counter & 0xffffffff00000000ll) | (uint32_t)spindle_counts_in;
+
+if (spindle_oriented_in) {
+	was_oriented = 1;
+} else if (was_oriented) {
+	// after orientation 32-bit spindle postion feeback is reset
+	// so we also reset position offset and counter high-dword
+	if (spindle_counts_in > 0) {
+		was_oriented = 0;
+		offset = 0;
+		counter = spindle_counts_in;
+	}
+}
+
+if (index_request) {
+	if (waiting_index) {
+		if (counter >= next_index) {
+			offset = next_index;
+			waiting_index = 0;
+			index_request = 0;
+		} else if (counter <= prev_index) {
+			offset = prev_index;
+			waiting_index = 0;
+			index_request = 0;
+		}
+	} else {
+#ifdef __KERNEL__
+		prev_index = counter;
+		do_div(prev_index, cpr);
+		prev_index *= cpr;
+
+		next_index = counter;
+		do_div(next_index, cpr);
+		next_index++;
+		next_index *= cpr;
+#else
+		prev_index = (counter / cpr) * cpr;
+		next_index = (counter / cpr + 1) * cpr;
+#endif
+		waiting_index = 1;
+	}
+}
+
+revs = (counter - offset) / (double)cpr;
+
+orient_out = spindle_orient_in || spindle_locked_in;
