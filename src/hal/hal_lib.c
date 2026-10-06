@@ -4699,6 +4699,35 @@ int hal_stream_num_underruns(hal_stream_t *stream)
     return atomic_load_explicit(&stream->fifo->num_underruns, memory_order_acquire);
 }
 
+// Comparision between to hal_stream_data buffs that only looks
+// at the bits actually relevant. This is as we do not always
+// zero the unused bits in the union for the shorter values.
+// 
+int hal_stream_data_compare(hal_stream_t *stream, union hal_stream_data *buf1, union hal_stream_data *buf2) {
+    int n = hal_stream_element_count(stream);
+    for(int i = 0; i < n; i++) {
+        switch (hal_stream_element_type(stream, i) ) {
+            case HAL_BIT:
+                    if (buf1[i].b != buf2[i].b) return -1;
+                    break;
+            case HAL_S32:
+                    if (buf1[i].s != buf2[i].s) return -1;
+                    break;
+            case HAL_U32:
+                    if (buf1[i].u != buf2[i].u) return -1;
+                    break;
+            case HAL_FLOAT:
+                    if (buf1[i].f != buf2[i].f) return -1;
+                    break;
+                    break;
+            default:
+		    // unknown type - so play it safe as we do not know how to compare
+		    return -2;
+	    }
+    };
+    return 0;
+}
+
 #ifdef RTAPI
 /* only export symbols when we're building a kernel module */
 

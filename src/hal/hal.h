@@ -1416,6 +1416,10 @@ int hal_enforce_exact_base_period(void);
 
 #endif // ULAPI
 
+// As the elements of the union are not identical in size; and we do not always zere
+// the un-used bytes; one cannot use a simple memcmp/bcmp to comapre to
+// data buffs.
+extern int hal_stream_data_compare(hal_stream_t *stream, union hal_stream_data *buf1, union hal_stream_data *buf2);
 RTAPI_END_DECLS
 
 #undef __HAL_PFMT
