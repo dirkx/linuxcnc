@@ -45,7 +45,7 @@ HALSCOPESRCS := \
     hal/utils/scope_trig.c \
     hal/utils/scope_disp.c \
     hal/utils/scope_files.c \
-    hal/utils/miscgtk.c
+    hal/utils/miscgtk.c 
 
 USERSRCS += $(HALSCOPESRCS)
 
