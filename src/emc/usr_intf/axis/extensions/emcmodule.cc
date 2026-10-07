@@ -1984,6 +1984,14 @@ static PyObject *home(pyCommandChannel *s, PyObject *o) {
     return Py_None;
 }
 
+static PyObject *set_homed(pyCommandChannel *s, PyObject *o) {
+    EMC_JOINT_SET_HOMED m;
+    if(!PyArg_ParseTuple(o, "i", &m.joint)) return NULL;
+    emcSendCommand(s, m);
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyObject *unhome(pyCommandChannel *s, PyObject *o) {
     EMC_JOINT_UNHOME m;
     if(!PyArg_ParseTuple(o, "i", &m.joint)) return NULL;
@@ -2376,6 +2384,7 @@ static PyMethodDef Command_methods[] = {
         "home(JOINT) - Home the specified joint.\n"
         "JOINT can be a valid joint number (0-9), or -1 to home all joints.\n"
     },
+    {"set_homed", (PyCFunction)set_homed, METH_VARARGS, NULL},
     {"unhome", (PyCFunction)unhome, METH_VARARGS, NULL},
     {"jog", (PyCFunction)jog, METH_VARARGS,
         "jog(JOG_CONTINUOUS, joint_flag, index, speed)\n"

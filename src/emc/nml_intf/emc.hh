@@ -70,6 +70,7 @@ struct PM_CARTESIAN;
 #define EMC_JOG_ABS_TYPE                              ((NMLTYPE) 126)
 #define EMC_JOINT_OVERRIDE_LIMITS_TYPE                ((NMLTYPE) 129)
 #define EMC_JOINT_LOAD_COMP_TYPE                      ((NMLTYPE) 131)
+#define EMC_JOINT_SET_HOMED_TYPE                      ((NMLTYPE) 132)
 #define EMC_JOINT_SET_BACKLASH_TYPE                   ((NMLTYPE) 134)
 #define EMC_JOINT_UNHOME_TYPE                         ((NMLTYPE) 135)
 #define EMC_JOG_STOP_TYPE                             ((NMLTYPE) 136)
@@ -316,6 +317,7 @@ extern int emcJointSetMaxAcceleration(int joint, double acc);
 extern int emcJointInit(int joint);
 extern int emcJointHalt(int joint);
 extern int emcJointHome(int joint);
+extern int emcJointSetHomed(int joint);
 extern int emcJointUnhome(int joint);
 extern int emcJointActivate(int joint);
 extern int emcJointDeactivate(int joint);

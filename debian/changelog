@@ -1,4 +1,4 @@
-linuxcnc (1:2.10.0~pre2) UNRELEASED; urgency=medium
+linuxcnc (1:2.10.0~pre2-nyx59) UNRELEASED; urgency=medium
 
   [ Andy Pugh]
   * New HAL API, all pins now 64-bit.
@@ -18,6 +18,23 @@ linuxcnc (1:2.10.0~pre2) UNRELEASED; urgency=medium
     as well.
 
  -- andypugh <andy@bodgesoc.org>  Wed, 07 Jan 2026 22:15:18 +0000
+
+ -- andypugh <andy@bodgesoc.org>  Thu, 25 Jun 2026 23:04:56 +0100
+
+linuxcnc (1:2.9.8nyx57) bookworm; urgency=low
+
+  * modbus support
+
+ -- Dmitry Yurtaev <dmitry@yurtaev.com>  Tue, 21 Apr 2026 15:02:20 +0300
+
+linuxcnc (1:2.9.8nyx56) bookworm; urgency=low
+
+  * upstream merge
+  * minor config cleanups
+
+ -- Dmitry Yurtaev <dmitry@yurtaev.com>  Tue, 24 Feb 2026 15:39:01 +0400
+
+ -- andypugh <andy@bodgesoc.org>  Thu, 02 Jul 2026 21:14:01 +0100
 
 linuxcnc (1:2.9.8) UNRELEASED; urgency=medium
 

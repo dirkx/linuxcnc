@@ -1547,6 +1547,15 @@ void emcmotCommandHandler_locked(void *arg, long servo_period)
 	    do_home_joint(joint_num);
 	    break;
 
+	case EMCMOT_JOINT_SET_HOMED:
+	    /* mark the specified joint homed */
+	    rtapi_print_msg(RTAPI_MSG_DBG, "JOINT_SET_HOMED");
+	    rtapi_print_msg(RTAPI_MSG_DBG, " %d", joint_num);
+	    if (joint) {
+	        set_homed(joint_num,emcmotStatus->motion_state);
+	    }
+	    break;
+
 	case EMCMOT_JOINT_UNHOME:
             /* unhome the specified joint, or all joints if -1, or volatile joints if -2 */
             rtapi_print_msg(RTAPI_MSG_DBG, "JOINT_UNHOME");

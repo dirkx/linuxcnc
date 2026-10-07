@@ -1,0 +1,76 @@
+//
+// fagor.comp
+// YOP/FAGOR op panel rotary switch handler
+//
+// Copyright (C) 2018 Dmitry Yurtaev (dmitry@yurtaev.com)
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with the program; if not, write to the Free
+// Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+// MA 02110-1301 USA.
+//
+
+component fagor "FAGOR op panel rotary switch handler";
+option userspace no;
+
+pin in sint sw-in;
+pin in bool rapid-in;
+pin in bool jog-x-selected;
+pin in bool jog-z-selected;
+
+pin out signed feed-override;
+pin out bool  jog;
+pin out real jog-speed;
+pin out bool  mpg;
+pin out real mpg-scale;
+pin out bool  jog-x-enable;
+pin out bool  jog-z-enable;
+pin out bool  off;
+
+function _;
+license "GPL"; // indicates GPL v2 or later
+;;
+
+FUNCTION(_) {
+	int n = sw_in;
+	if (n < 0) n = 0;
+	if (n > 23) n = 23;
+
+	jog_set(0);
+        mpg_set(0);
+        off_set(0);
+	jog_speed_set(0);
+
+	switch (n) {
+	case 0: off_set(1); break;
+
+	case 1: mpg_scale_set(0.1); mpg_set(1); break;
+	case 2: mpg_scale_set(0.01); mpg_set(1); break;
+	case 3: mpg_scale_set(0.001); mpg_set(1); break;
+
+	case 4: jog_speed_set(10000); jog_set(1); break;
+	case 5: jog_speed_set(1000); jog_set(1); break;
+	case 6: jog_speed_set(100); jog_set(1); break;
+	case 7: jog_speed_set(10); jog_set(1); break;
+	case 8: jog_speed_set(1); jog_set(1); break;
+
+	default: {
+		static float override_value[15] = { 0, 2, 4, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
+		feed_override_set(override_value[n - 9]);
+		break;
+		}
+	}
+
+	jog_x_enable_set(mpg && jog_x_selected);
+	jog_z_enable_set(mpg && jog_z_selected);
+}

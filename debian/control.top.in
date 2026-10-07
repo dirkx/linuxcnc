@@ -71,6 +71,8 @@ Build-Depends:
     python3-numpy <!nocheck>,
     python3-configobj <!nocheck>,
     libfmt-dev,
+    xvfb,
+    libpci-dev,
     yapps2
 Build-Depends-Indep:
     @DOC_DEPENDS@,

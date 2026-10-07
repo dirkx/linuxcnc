@@ -19,6 +19,7 @@ COMP_MANPAGES := $(patsubst hal/components/%.comp, ../docs/build/man/man9/%.9, $
 ifeq ($(BUILD_SYS),uspace)
 COMP_DRIVERS += hal/drivers/serport.comp
 COMP_DRIVERS += hal/drivers/mesa_7i65.comp
+COMP_DRIVERS += hal/drivers/nyx.comp
 COMP_DRIVERS += hal/drivers/mesa_uart.comp
 else
 COMP_DRIVERS := $(wildcard hal/drivers/*.comp)

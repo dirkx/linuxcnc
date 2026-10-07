@@ -1,0 +1,26 @@
+component nist "pushbutton to nist";
+option period no;
+
+pin in bool in;
+pin in bool is-on;
+pin out bool on;
+pin out bool off;
+variable int state;
+
+function _;
+license "GPL"; // indicates GPL v2 or later
+;;
+
+FUNCTION(_) {
+	if (in) {
+		if (!state) {
+			on_set( !is_on );
+			off_set( is_on );
+			state = 1 ;
+		}
+	} else {
+		state =  0;
+		on_set( false );
+  		off_set( false );
+	}
+}

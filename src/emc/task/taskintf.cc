@@ -800,6 +800,18 @@ int emcJointHome(int joint)
     return usrmotWriteEmcmotCommand(&emcmotCommand);
 }
 
+int emcJointSetHomed(int joint)
+{
+	if (joint < -2 || joint >= EMCMOT_MAX_JOINTS) {
+		return 0;
+	}
+
+	emcmotCommand.command = EMCMOT_JOINT_SET_HOMED;
+	emcmotCommand.joint = joint;
+
+	return usrmotWriteEmcmotCommand(&emcmotCommand);
+}
+
 int emcJointUnhome(int joint)
 {
 	// See emcJointHome: bound by the configured joint count, and report it
@@ -1782,15 +1794,20 @@ int emcPositionSave() {
         return -1;
     }
     auto posfile = ini.findString("POSITION_FILE", "TRAJ");
-
     if(!posfile || posfile->empty()) return 0;
+
     // like the var file, make sure the posfile is recreated according to umask
     unlink(posfile->c_str());
     FILE *f = fopen(posfile->c_str(), "w");
     if(!f) return -1;
     for(int i=0; i<EMCMOT_MAX_JOINTS; i++) {
-	int r = fprintf(f, "%.17f\n", emcmotStatus.joint_status[i].pos_fb);
-	if(r < 0) { fclose(f); return -1; }
+        char jointString[32];
+	snprintf(jointString, sizeof(jointString), "JOINT_%d", i);
+	auto absolute = ini.findBool("ABSOLUTE_ENCODER", jointString);
+
+	fprintf(f, "%.17f\n", absolute ?
+		-emcmotStatus.joint_status[i].motor_offset :
+		emcmotStatus.joint_status[i].pos_fb);
     }
     fclose(f);
     return 0;

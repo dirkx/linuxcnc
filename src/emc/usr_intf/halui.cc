@@ -121,6 +121,7 @@ static int axis_mask = 0;
     ARRAY(bool,spindle_brake_is_on, EMCMOT_MAX_SPINDLES) /* status pin that tells us if brake is on */ \
 \
     ARRAY(bool,joint_home,EMCMOT_MAX_JOINTS+1) /* pin for homing one joint */ \
+    ARRAY(bool,joint_set_homed,EMCMOT_MAX_JOINTS+1) /* pin for immediate homing one joint */ \
     ARRAY(bool,joint_unhome,EMCMOT_MAX_JOINTS+1) /* pin for unhoming one joint */ \
     ARRAY(bool,joint_is_homed,EMCMOT_MAX_JOINTS+1) /* status pin that the joint is homed */ \
     ARRAY(bool,joint_on_soft_min_limit,EMCMOT_MAX_JOINTS+1) /* status pin that the joint is on the software min limit */ \
@@ -715,6 +716,7 @@ int halui_hal_init(void)
 
     for (int joint = 0; joint < num_joints ; joint++) {
         CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_home[joint]), 0, "halui.joint.%d.home", joint));
+        CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_set_homed[joint]), 0, "halui.joint.%d.set-homed", joint));
         CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_unhome[joint]), 0, "halui.joint.%d.unhome", joint));
         CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_nr_select[joint]), 0, "halui.joint.%d.select", joint));
         CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->jjog_plus[joint]), 0, "halui.joint.%d.plus", joint));
@@ -737,6 +739,7 @@ int halui_hal_init(void)
     }
 
     CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_home[num_joints]), 0, "halui.joint.selected.home"));
+    CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_set_homed[num_joints]), 0, "halui.joint.selected.set-homed"));
     CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->joint_unhome[num_joints]), 0, "halui.joint.selected.unhome"));
     CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->jjog_plus[num_joints]), 0, "halui.joint.selected.plus"));
     CHK(hal_pin_new_bool(comp_id, HAL_IN, &(halui_data->jjog_minus[num_joints]), 0, "halui.joint.selected.minus"));
@@ -1061,6 +1064,14 @@ static int sendHome(int joint)
     return emcCommandSend(emc_joint_home_msg);
 }
 
+static int sendSetHomed(int joint)
+{
+    EMC_JOINT_SET_HOMED emc_joint_set_homed_msg;
+
+    emc_joint_set_homed_msg.joint = joint;
+    return emcCommandSend(emc_joint_set_homed_msg);
+}
+
 static int sendUnhome(int joint)
 {
     EMC_JOINT_UNHOME emc_joint_unhome_msg;
@@ -1320,6 +1331,7 @@ static void hal_init_pins()
 
     for (joint=0; joint < num_joints; joint++) {
 	hal_set_bool(halui_data->joint_home[joint], old_halui_data.joint_home[joint] = 0);
+	hal_set_bool(halui_data->joint_set_homed[joint], old_halui_data.joint_set_homed[joint] = 0);
 	hal_set_bool(halui_data->joint_unhome[joint], old_halui_data.joint_unhome[joint] = 0);
 	hal_set_bool(halui_data->joint_nr_select[joint], old_halui_data.joint_nr_select[joint] = 0);
 	hal_set_bool(halui_data->jjog_minus[joint], old_halui_data.jjog_minus[joint] = 0);
@@ -1663,6 +1675,9 @@ static void check_hal_changes()
 	if (check_bit_changed(new_halui_data.joint_home[joint], old_halui_data.joint_home[joint]) != 0)
 	    sendHome(joint);
 
+	if (check_bit_changed(new_halui_data.joint_set_homed[joint], old_halui_data.joint_set_homed[joint]) != 0)
+	    sendSetHomed(joint);
+
 	if (check_bit_changed(new_halui_data.joint_unhome[joint], old_halui_data.joint_unhome[joint]) != 0)
 	    sendUnhome(joint);
 
@@ -1814,6 +1829,9 @@ static void check_hal_changes()
 
     if (check_bit_changed(new_halui_data.joint_home[num_joints], old_halui_data.joint_home[num_joints]) != 0)
 	sendHome(new_halui_data.joint_selected);
+
+    if (check_bit_changed(new_halui_data.joint_set_homed[num_joints], old_halui_data.joint_set_homed[num_joints]) != 0)
+	sendSetHomed(new_halui_data.joint_selected);
 
     if (check_bit_changed(new_halui_data.joint_unhome[num_joints], old_halui_data.joint_unhome[num_joints]) != 0)
 	sendUnhome(new_halui_data.joint_selected);

@@ -1,0 +1,28 @@
+component probemux "2 probex mux";
+option period no;
+
+pin in bool touch-in;
+pin in bool height-in;
+pin in bool decel-in;
+pin in bool default-in = 1;
+
+pin in bool touch-enable;
+pin in bool height-enable;
+pin in bool decel-enable;
+pin out bool out;
+
+function _ nofp;
+
+license "GPL"; // indicates GPL v2 or later
+;;
+
+FUNCTION(_) {
+
+	if (touch_enable) {
+		out_set(touch_in);
+	} else if (height_enable) {
+		out_set((decel_enable && decel_in) || height_in);
+	} else {
+		out_set(default_in);
+	}
+}

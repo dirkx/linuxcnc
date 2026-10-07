@@ -87,6 +87,7 @@ void do_cancel_homing(int jno);
 // unhomes joints with VOLATILE_HOME set.  motstate guards against
 // unhoming an extrajoint while motion is enabled.
 void set_unhomed(int jno,motion_state_t motstate);
+void set_homed(int jno,motion_state_t motstate);
 
 //---------------------------------------------------------------------
 // QUERIES
