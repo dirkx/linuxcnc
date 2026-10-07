@@ -457,7 +457,7 @@ bool Usb::setupAsyncTransfer()
         //! timeout[ms]
                               750);
     int r = libusb_submit_transfer(inTransfer);
-    assert(0 == r);
+//    assert(0 == r);
     return (0 == r);
 }
 // ----------------------------------------------------------------------
