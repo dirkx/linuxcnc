@@ -60,6 +60,8 @@
 #include "rtapi_string.h"
 #include "rtapi_atomic.h"
 
+#include "hal/utils/ansort.h"		/* Alphanumeric sorting; sorts hal.D10.bar after hal.D9.foo */
+
 #ifdef RTAPI
 #include "rtapi_app.h"
 /* module information */
@@ -777,7 +779,7 @@ int hal_pin_new(const char *name, hal_type_t type, hal_pin_dir_t dir,
 	    return 0;
 	}
 	ptr = SHMPTR(next);
-	cmp = strcmp(ptr->name, new->name);
+	cmp = strcmp_alphanum(ptr->name, new->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    new->next_ptr = next;
@@ -909,7 +911,7 @@ int hal_pin_alias(const char *pin_name, const char *alias)
 	    return 0;
 	}
 	ptr = SHMPTR(next);
-	cmp = strcmp(ptr->name, pin->name);
+	cmp = strcmp_alphanum(ptr->name, pin->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    pin->next_ptr = next;
@@ -1036,7 +1038,7 @@ with the C standard.
 	    return 0;
 	}
 	ptr = SHMPTR(next);
-	cmp = strcmp(ptr->name, new->name);
+	cmp = strcmp_alphanum(ptr->name, new->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    new->next_ptr = next;
@@ -1481,7 +1483,7 @@ int hal_param_new(const char *name, hal_type_t type, hal_param_dir_t dir, void *
 	    return 0;
 	}
 	ptr = SHMPTR(next);
-	cmp = strcmp(ptr->name, new->name);
+	cmp = strcmp_alphanum(ptr->name, new->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    new->next_ptr = next;
@@ -1711,7 +1713,7 @@ int hal_param_alias(const char *param_name, const char *alias)
 	    return 0;
 	}
 	ptr = SHMPTR(next);
-	cmp = strcmp(ptr->name, param->name);
+	cmp = strcmp_alphanum(ptr->name, param->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    param->next_ptr = next;
@@ -1862,7 +1864,7 @@ int hal_export_funct(const char *name, void (*funct) (void *, long),
 	    break;
 	}
 	fptr = SHMPTR(next);
-	cmp = strcmp(fptr->name, new->name);
+	cmp = strcmp_alphanum(fptr->name, new->name);
 	if (cmp > 0) {
 	    /* found the right place for it, insert here */
 	    new->next_ptr = next;
@@ -1953,7 +1955,7 @@ int hal_create_thread(const char *name, unsigned long period_nsec, int uses_fp)
     next = hal_data->thread_list_ptr;
     while (next != 0) {
 	tptr = SHMPTR(next);
-	cmp = strcmp(tptr->name, name);
+	cmp = strcmp_alphanum(tptr->name, name);
 	if (cmp == 0) {
 	    /* name already in list, can't insert */
 	    rtapi_mutex_give(&(hal_data->mutex));
