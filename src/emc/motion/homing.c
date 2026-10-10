@@ -16,6 +16,7 @@
 #include "motion.h"
 #include "homing.h"
 #include "hal.h"
+#include <stdio.h>
 
 static double servo_freq;
 static emcmot_joint_t  * joints;
@@ -100,7 +101,9 @@ typedef enum {
   HOME_LOCK,// 22
   HOME_LOCK_WAIT,// 23
   HOME_FINISHED,// 24
-  HOME_ABORT// 25
+  HOME_ABORT,// 25
+  HOME_DOGBONE_SLOW_START,// 26
+  HOME_DOGBONE_SLOW_WAIT// 27
 } home_state_t;
 
 // local per-joint data (includes hal pin data)
@@ -121,6 +124,7 @@ typedef struct {
   int          home_sequence;        // intfc, updateable
   bool         volatile_home;        // intfc
   bool         home_is_synchronized;
+  bool         home_dogbone;
 } home_local_data;
 
 static  home_local_data H[EMCMOT_MAX_JOINTS];
@@ -521,6 +525,7 @@ static int base_homing_init(int id,
         H[i].home            =  0;
         H[i].home_flags      =  0;
         H[i].home_sequence   = 1000; //startup: unrealizable, positive seq no.
+	H[i].home_dogbone    =  0;
         H[i].volatile_home   =  0;
     }
     return 0;
@@ -612,7 +617,8 @@ static void base_set_joint_homing_params(int    jno,
                                          double home_latch_vel,
                                          int    home_flags,
                                          int    home_sequence,
-                                         bool   volatile_home
+                                         bool   volatile_home,
+					 bool   home_dogbone
                                          )
 {
     H[jno].home_offset     = offset;
@@ -623,6 +629,7 @@ static void base_set_joint_homing_params(int    jno,
     H[jno].home_flags      = home_flags;
     H[jno].home_sequence   = home_sequence;
     H[jno].volatile_home   = volatile_home;
+    H[jno].home_dogbone    = home_dogbone;
     update_home_is_synchronized();
 }
 
@@ -812,6 +819,7 @@ static int base_1joint_state_machine(int joint_num)
                 } else if (H[joint_num].home_flags & HOME_USE_INDEX) {
                     /* home using index pulse only */
                     H[joint_num].home_state = HOME_INDEX_ONLY_START;
+fprintf(stderr,"to HOME_INDEX_ONLY_START\n");
                     immediate_state = 1;
                 } else {
                     rtapi_print_msg(RTAPI_MSG_ERR,
@@ -830,7 +838,63 @@ static int base_1joint_state_machine(int joint_num)
                 }
             }
             break;
+        case HOME_DOGBONE_SLOW_START:
+	    if (joint->free_tp.active) {
+		    H[joint_num].pause_timer = 0;
+		    break;
+	    }
 
+	    if (H[joint_num].pause_timer < (HOME_DELAY * servo_freq)) {
+		    H[joint_num].pause_timer++;
+		    break;
+	    }
+
+	    H[joint_num].pause_timer = 0;
+
+	    if (!home_sw_active) {
+		    rtapi_print_msg(RTAPI_MSG_ERR,
+				    _("Dogbone: switch lost before slow phase j=%d"),
+				    joint_num);
+		    H[joint_num].home_state = HOME_ABORT;
+		    immediate_state = 1;
+		    break;
+	    }
+
+	    /* Continue SAME direction, but slower */
+	    double vel = H[joint_num].home_latch_vel;
+
+	    if (H[joint_num].home_search_vel < 0)
+		    vel = -fabs(vel);
+	    else
+		    vel = fabs(vel);
+
+	    home_start_move(joint, vel);
+
+	    H[joint_num].home_state = HOME_DOGBONE_SLOW_WAIT;
+fprintf(stderr,"to HOME_DOGBONE_SLOW_WAIT\n");
+	    break;
+	case HOME_DOGBONE_SLOW_WAIT:
+	    if (!home_sw_active) {
+
+		    /* latch position at falling edge */
+                    if (H[joint_num].home_flags & HOME_USE_INDEX) {
+			    fprintf(stderr, "now use index homing\n");
+                            //H[joint_num].home_state = HOME_INDEX_ONLY_START;
+			    H[joint_num].home_state = HOME_INDEX_SEARCH_START;
+fprintf(stderr,"to HOME_INDEX_SEARCH_START\n");
+        			//case HOME_INDEX_SEARCH_START:
+                            immediate_state = 1;
+	            } else {
+			    joint->free_tp.enable = 0;
+			    H[joint_num].home_state = HOME_SET_SWITCH_POSITION;
+fprintf(stderr,"to HOME_SET_SWITCH_POSITION\n");
+			    immediate_state = 1;
+		    }
+		    break;
+	    }
+
+	    ABORT_CHECK(joint_num);
+	    break;
         case HOME_INITIAL_BACKOFF_START:
             /* This state is called if the homing sequence starts at a
                location where the home switch is already tripped. It
@@ -911,8 +975,14 @@ static int base_1joint_state_machine(int joint_num)
             if (home_sw_active) {
                 /* yes, stop motion */
                 joint->free_tp.enable = 0;
+
                 /* go to next step */
-                H[joint_num].home_state = HOME_SET_COARSE_POSITION;
+		if (H[joint_num].home_dogbone) {
+			H[joint_num].home_state = HOME_DOGBONE_SLOW_START;
+fprintf(stderr,"to HOME_DOGBONE_SLOW_START\n");
+		} else {
+			H[joint_num].home_state = HOME_SET_COARSE_POSITION;
+		}
                 immediate_state = 1;
                 break;
             }
@@ -1044,12 +1114,14 @@ static int base_1joint_state_machine(int joint_num)
                 if (H[joint_num].home_flags & HOME_USE_INDEX) {
                     /* look for index pulse */
                     H[joint_num].home_state = HOME_INDEX_SEARCH_START;
+fprintf(stderr,"to HOME_INDEX_SEARCH_START\n");
                     immediate_state = 1;
                     break;
                 } else {
                     /* no index pulse, stop motion */
                     joint->free_tp.enable = 0;
                     /* go to next step */
+fprintf(stderr,"to HOME_SET_SWITCH_POSITION\n");
                     H[joint_num].home_state = HOME_SET_SWITCH_POSITION;
                     immediate_state = 1;
                     break;
@@ -1100,6 +1172,8 @@ static int base_1joint_state_machine(int joint_num)
                 /* yes, where do we go next? */
                 if (H[joint_num].home_flags & HOME_USE_INDEX) {
                     /* look for index pulse */
+fprintf(stderr,"to HOME_INDEX_SEARCH_START\n");
+
                     H[joint_num].home_state = HOME_INDEX_SEARCH_START;
                     immediate_state = 1;
                     break;
@@ -1108,6 +1182,7 @@ static int base_1joint_state_machine(int joint_num)
                     joint->free_tp.enable = 0;
                     /* go to next step */
                     H[joint_num].home_state = HOME_SET_SWITCH_POSITION;
+fprintf(stderr,"to HOME_SET_SWITCH_POSITION\n");
                     immediate_state = 1;
                     break;
                 }
@@ -1183,6 +1258,7 @@ static int base_1joint_state_machine(int joint_num)
             home_start_move(joint, H[joint_num].home_latch_vel);
             /* next state */
             H[joint_num].home_state = HOME_INDEX_SEARCH_WAIT;
+fprintf(stderr,"to HOME_INDEX_SEARCH_WAIT\n");
             break;
 
         case HOME_INDEX_SEARCH_START:
@@ -1195,6 +1271,7 @@ static int base_1joint_state_machine(int joint_num)
             H[joint_num].index_enable = 1;
             /* and move right into the waiting state */
             H[joint_num].home_state = HOME_INDEX_SEARCH_WAIT;
+fprintf(stderr,"to HOME_INDEX_SEARCH_WAIT\n");
             immediate_state = 1;
             ABORT_CHECK(joint_num);
             break;
@@ -1213,6 +1290,7 @@ static int base_1joint_state_machine(int joint_num)
                 joint->free_tp.enable = 0;
                 /* go to next step */
                 H[joint_num].home_state = HOME_SET_INDEX_POSITION;
+fprintf(stderr,"to HOME_SET_INDEX_POSITION\n");
                 immediate_state = 1;
                 break;
             }
@@ -1235,15 +1313,18 @@ static int base_1joint_state_machine(int joint_num)
                /* Special case: encoder does not reset on index pulse.
                   This moves the internal position but does not affect
                   the motor position */
+               fprintf(stderr, "set home without resetting the encoder\n");
                offset = H[joint_num].home_offset - joint->pos_fb;
                joint->pos_cmd          += offset;
                joint->pos_fb           += offset;
                joint->free_tp.curr_pos += offset;
                joint->motor_offset     -= offset;
+	       fprintf(stderr, "joint pos cmd: %f motor offset: %f cur pos: %f motor offset: %f\n", joint->pos_cmd, joint->pos_fb, joint->free_tp.curr_pos, joint->motor_offset);
             }
 
             /* next state */
             H[joint_num].home_state = HOME_FINAL_MOVE_START;
+fprintf(stderr,"to HOME_FINAL_MOVE_START\n");
             immediate_state = 1;
             break;
 
@@ -1273,6 +1354,7 @@ static int base_1joint_state_machine(int joint_num)
 
             /* plan a final move to home position */
             joint->free_tp.pos_cmd = H[joint_num].home;
+            fprintf(stderr, "final move to home: %f\n", H[joint_num].home);
             /* if home_vel is set (>0) then we use that, otherwise we rapid there */
             if (H[joint_num].home_final_vel > 0) {
                 joint->free_tp.max_vel = fabs(H[joint_num].home_final_vel);
@@ -1451,7 +1533,8 @@ void set_joint_homing_params(int    jno,
                              double home_latch_vel,
                              int    home_flags,
                              int    home_sequence,
-                             bool   volatile_home
+                             bool   volatile_home,
+			     bool   home_dogbone
                              )
 {     base_set_joint_homing_params(jno,
                                    offset,
@@ -1461,7 +1544,8 @@ void set_joint_homing_params(int    jno,
                                    home_latch_vel,
                                    home_flags,
                                    home_sequence,
-                                   volatile_home);
+                                   volatile_home,
+				   home_dogbone);
 }
 void update_joint_homing_params(int    jno,
                                 double offset,
@@ -1495,8 +1579,8 @@ EXPORT_SYMBOL(get_index_enable);
 EXPORT_SYMBOL(read_homing_in_pins);
 EXPORT_SYMBOL(do_home_joint);
 EXPORT_SYMBOL(do_cancel_homing);
-EXPORT_SYMBOL(set_homed);
 EXPORT_SYMBOL(set_unhomed);
+EXPORT_SYMBOL(set_homed);
 EXPORT_SYMBOL(set_joint_homing_params);
 EXPORT_SYMBOL(update_joint_homing_params);
 EXPORT_SYMBOL(write_homing_out_pins);

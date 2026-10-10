@@ -284,7 +284,8 @@ int emcJointSetHomingParams(int joint, double home, double offset, double home_f
 			   double search_vel, double latch_vel,
 			   int use_index, int encoder_does_not_reset,
 			   int ignore_limits, int is_shared,
-			   int sequence,int volatile_home, int locking_indexer,int absolute_encoder)
+			   int sequence,int volatile_home, int locking_indexer, int absolute_encoder,
+			   int home_dogbone)
 {
 #ifdef ISNAN_TRAP
     if (std::isnan(home) || std::isnan(offset) || std::isnan(home_final_vel) ||
@@ -308,6 +309,7 @@ int emcJointSetHomingParams(int joint, double home, double offset, double home_f
     emcmotCommand.flags = 0;
     emcmotCommand.home_sequence = sequence;
     emcmotCommand.volatile_home = volatile_home;
+    emcmotCommand.home_dogbone = home_dogbone;
     if (use_index) {
 	emcmotCommand.flags |= HOME_USE_INDEX;
     }
@@ -342,9 +344,9 @@ int emcJointSetHomingParams(int joint, double home, double offset, double home_f
     int retval = usrmotWriteEmcmotCommand(&emcmotCommand);
 
     if (emc_debug & EMC_DEBUG_CONFIG) {
-        rcs_print("%s(%d, %.4f, %.4f, %.4f, %.4f, %.4f, %d, %d, %d, %d, %d) returned %d\n",
+        rcs_print("%s(%d, %.4f, %.4f, %.4f, %.4f, %.4f, %d, %d, %d, %d, %d, %d) returned %d\n",
           __FUNCTION__, joint, home, offset, home_final_vel, search_vel, latch_vel,
-          use_index, ignore_limits, is_shared, sequence, volatile_home, retval);
+          use_index, ignore_limits, is_shared, sequence, volatile_home, home_dogbone, retval);
     }
     return retval;
 }
@@ -778,15 +780,16 @@ int emcJointHome(int joint)
 
 int emcJointSetHomed(int joint)
 {
-	if (joint < -2 || joint >= EMCMOT_MAX_JOINTS) {
-		return 0;
-	}
+       if (joint < -2 || joint >= EMCMOT_MAX_JOINTS) {
+               return 0;
+       }
 
-	emcmotCommand.command = EMCMOT_JOINT_SET_HOMED;
-	emcmotCommand.joint = joint;
+       emcmotCommand.command = EMCMOT_JOINT_SET_HOMED;
+       emcmotCommand.joint = joint;
 
-	return usrmotWriteEmcmotCommand(&emcmotCommand);
+       return usrmotWriteEmcmotCommand(&emcmotCommand);
 }
+
 
 int emcJointUnhome(int joint)
 {
@@ -1719,8 +1722,10 @@ int emcPositionSave() {
     try {
         posfile = ini.Find("POSITION_FILE", "TRAJ");
     } catch (IniFile::Exception e) {
+        ini.Close();
         return -1;
     }
+    ini.Close();
 
     if(!posfile || !posfile[0]) return 0;
     // like the var file, make sure the posfile is recreated according to umask
@@ -1728,18 +1733,19 @@ int emcPositionSave() {
     FILE *f = fopen(posfile, "w");
     if(!f) return -1;
     for(int i=0; i<EMCMOT_MAX_JOINTS; i++) {
-	char jointString[16];
-	int absolute = 0;
+       char jointString[16];
+       int absolute = 0;
 
-	snprintf(jointString, sizeof(jointString), "JOINT_%d", i);
-	try {
-	    ini.Find(&absolute, "ABSOLUTE_ENCODER", jointString);
-	} catch (IniFile::Exception e) {
+       snprintf(jointString, sizeof(jointString), "JOINT_%d", i);
+       try {
+           ini.Find(&absolute, "ABSOLUTE_ENCODER", jointString);
+       } catch (IniFile::Exception e) {
         }
 
-	fprintf(f, "%.17f\n", absolute ?
-		-emcmotStatus.joint_status[i].motor_offset :
-		emcmotStatus.joint_status[i].pos_fb);
+	int r = fprintf(f, "%.17f\n", absolute ?
+               -emcmotStatus.joint_status[i].motor_offset :
+			emcmotStatus.joint_status[i].pos_fb);
+	if(r < 0) { fclose(f); return -1; }
     }
     fclose(f);
     return 0;

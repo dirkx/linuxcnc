@@ -311,6 +311,7 @@ class EMC_JOINT_SET_HOMING_PARAMS:public EMC_JOINT_CMD_MSG {
     int volatile_home;
     int locking_indexer;
     int absolute_encoder;
+    int home_dogbone;
 };
 
 class EMC_JOINT_SET_MAX_VELOCITY:public EMC_JOINT_CMD_MSG {
@@ -386,10 +387,11 @@ class EMC_JOINT_HOME:public EMC_JOINT_CMD_MSG {
     void update(CMS * cms);
 };
 
+ 
 class EMC_JOINT_SET_HOMED:public EMC_JOINT_CMD_MSG {
   public:
     EMC_JOINT_SET_HOMED():EMC_JOINT_CMD_MSG(EMC_JOINT_SET_HOMED_TYPE,
-				     sizeof(EMC_JOINT_SET_HOMED)) {
+                                    sizeof(EMC_JOINT_SET_HOMED)) {
     };
 
     // For internal NML/CMS use only.

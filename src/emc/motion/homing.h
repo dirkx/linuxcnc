@@ -25,7 +25,8 @@ void set_joint_homing_params(int    jno,
                              double home_latch_vel,
                              int    home_flags,
                              int    home_sequence,
-                             bool   volatile_home
+                             bool   volatile_home,
+			     bool   home_dogbone
                              );
 
 // updateable interface params (for inihal pin changes typically):
@@ -57,6 +58,7 @@ void do_home_joint(int jno);
 void do_cancel_homing(int jno);
 void set_unhomed(int jno,motion_state_t motstate);
 void set_homed(int jno,motion_state_t motstate);
+
 
 //---------------------------------------------------------------------
 // QUERIES

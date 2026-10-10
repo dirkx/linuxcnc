@@ -812,7 +812,7 @@ static int emcTaskPlan(void)
 	    case EMC_JOINT_SET_MIN_FERROR_TYPE:
 	    case EMC_JOINT_ABORT_TYPE:
 	    case EMC_JOINT_LOAD_COMP_TYPE:
-	    case EMC_JOINT_SET_HOMED_TYPE:
+            case EMC_JOINT_SET_HOMED_TYPE:
 	    case EMC_JOINT_UNHOME_TYPE:
 	    case EMC_TRAJ_SET_SCALE_TYPE:
 	    case EMC_TRAJ_SET_RAPID_SCALE_TYPE:
@@ -911,7 +911,7 @@ static int emcTaskPlan(void)
 	    case EMC_JOINT_SET_MIN_POSITION_LIMIT_TYPE:
 	    case EMC_JOINT_HALT_TYPE:
 	    case EMC_JOINT_HOME_TYPE:
-	    case EMC_JOINT_SET_HOMED_TYPE:
+            case EMC_JOINT_SET_HOMED_TYPE:
 	    case EMC_JOINT_UNHOME_TYPE:
 	    case EMC_JOG_CONT_TYPE:
 	    case EMC_JOG_INCR_TYPE:
@@ -1028,7 +1028,7 @@ static int emcTaskPlan(void)
 		case EMC_JOINT_SET_HOMING_PARAMS_TYPE:
 		case EMC_JOINT_SET_FERROR_TYPE:
 		case EMC_JOINT_SET_MIN_FERROR_TYPE:
-		case EMC_JOINT_SET_HOMED_TYPE:
+                case EMC_JOINT_SET_HOMED_TYPE:
 		case EMC_JOINT_UNHOME_TYPE:
 		case EMC_TRAJ_PAUSE_TYPE:
 		case EMC_TRAJ_RESUME_TYPE:
@@ -1134,7 +1134,7 @@ static int emcTaskPlan(void)
 		case EMC_JOINT_SET_HOMING_PARAMS_TYPE:
 		case EMC_JOINT_SET_FERROR_TYPE:
 		case EMC_JOINT_SET_MIN_FERROR_TYPE:
-		case EMC_JOINT_SET_HOMED_TYPE:
+                case EMC_JOINT_SET_HOMED_TYPE:
 		case EMC_JOINT_UNHOME_TYPE:
 		case EMC_TRAJ_PAUSE_TYPE:
 		case EMC_TRAJ_RESUME_TYPE:
@@ -1207,7 +1207,7 @@ static int emcTaskPlan(void)
 		case EMC_JOINT_SET_HOMING_PARAMS_TYPE:
 		case EMC_JOINT_SET_FERROR_TYPE:
 		case EMC_JOINT_SET_MIN_FERROR_TYPE:
-		case EMC_JOINT_SET_HOMED_TYPE:
+                case EMC_JOINT_SET_HOMED_TYPE:
 		case EMC_JOINT_UNHOME_TYPE:
 		case EMC_TRAJ_PAUSE_TYPE:
 		case EMC_TRAJ_RESUME_TYPE:
@@ -1294,7 +1294,7 @@ static int emcTaskPlan(void)
 		case EMC_JOINT_SET_HOMING_PARAMS_TYPE:
 		case EMC_JOINT_SET_FERROR_TYPE:
 		case EMC_JOINT_SET_MIN_FERROR_TYPE:
-		case EMC_JOINT_SET_HOMED_TYPE:
+                case EMC_JOINT_SET_HOMED_TYPE:
 		case EMC_JOINT_UNHOME_TYPE:
 		case EMC_TRAJ_PAUSE_TYPE:
 		case EMC_TRAJ_RESUME_TYPE:
@@ -1377,7 +1377,7 @@ static int emcTaskPlan(void)
 	    case EMC_JOINT_SET_HOMING_PARAMS_TYPE:
 	    case EMC_JOINT_SET_FERROR_TYPE:
 	    case EMC_JOINT_SET_MIN_FERROR_TYPE:
-	    case EMC_JOINT_SET_HOMED_TYPE:
+            case EMC_JOINT_SET_HOMED_TYPE:
 	    case EMC_JOINT_UNHOME_TYPE:
 	    case EMC_TRAJ_SET_SCALE_TYPE:
 	    case EMC_TRAJ_SET_RAPID_SCALE_TYPE:
@@ -1696,9 +1696,9 @@ static int emcTaskIssueCommand(NMLmsg * cmd)
 	break;
 
     case EMC_JOINT_SET_HOMED_TYPE:
-	set_homed_msg = (EMC_JOINT_SET_HOMED *) cmd;
-	retval = emcJointSetHomed(set_homed_msg->joint);
-	break;
+       set_homed_msg = (EMC_JOINT_SET_HOMED *) cmd;
+       retval = emcJointSetHomed(set_homed_msg->joint);
+       break;
 
     case EMC_JOINT_UNHOME_TYPE:
 	unhome_msg = (EMC_JOINT_UNHOME *) cmd;
@@ -1756,7 +1756,8 @@ static int emcTaskIssueCommand(NMLmsg * cmd)
 					set_homing_params_msg->home_sequence,
 					set_homing_params_msg->volatile_home,
 					set_homing_params_msg->locking_indexer,
-					set_homing_params_msg->absolute_encoder);
+					set_homing_params_msg->absolute_encoder,
+					set_homing_params_msg->home_dogbone);
 	break;
 
     case EMC_JOINT_SET_FERROR_TYPE:

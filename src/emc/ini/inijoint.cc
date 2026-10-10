@@ -63,7 +63,8 @@ extern value_inihal_data old_inihal_data;
   emcJointSetHomingParams(int joint, double home, double offset, double home_vel, 
                           double search_vel, double latch_vel,
                           int use_index, int encoder_does_not_reset,
-                          int ignore_limits, int is_shared, int sequence, int volatile_home));
+                          int ignore_limits, int is_shared, int sequence, int volatile_home,
+			  int home_dogbone);
   emcJointActivate(int joint);
   emcJointSetMaxVelocity(int joint, double vel);
   emcJointSetMaxAcceleration(int joint, double acc);
@@ -87,6 +88,7 @@ static int loadJoint(int joint, EmcIniFile *jointIniFile)
     bool encoder_does_not_reset;
     bool ignore_limits;
     bool is_shared;
+    bool home_dogbone;
     int sequence;
     int volatile_home;
     int locking_indexer;
@@ -187,7 +189,8 @@ static int loadJoint(int joint, EmcIniFile *jointIniFile)
                        // will not be homed in home-all
         jointIniFile->Find(&sequence, "HOME_SEQUENCE", jointString);
         old_inihal_data.joint_home_sequence[joint] = sequence;
-
+	home_dogbone = false;
+	jointIniFile->Find(&home_dogbone, "HOME_DOGBONE", jointString);
         volatile_home = 0;	        // default
         jointIniFile->Find(&volatile_home, "VOLATILE_HOME", jointString);
         locking_indexer = false;
@@ -205,6 +208,7 @@ static int loadJoint(int joint, EmcIniFile *jointIniFile)
                                         ,volatile_home
                                         ,locking_indexer
                                         ,absolute_encoder
+					,home_dogbone
                                         )) {
             return -1;
         }

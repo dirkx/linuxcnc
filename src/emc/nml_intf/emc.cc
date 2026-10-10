@@ -85,8 +85,8 @@ int emcFormat(NMLTYPE type, void *buffer, CMS * cms)
 	((EMC_JOINT_HOME *) buffer)->update(cms);
 	break;
     case EMC_JOINT_SET_HOMED_TYPE:
-	((EMC_JOINT_SET_HOMED *) buffer)->update(cms);
-	break;
+        ((EMC_JOINT_SET_HOMED *) buffer)->update(cms);
+        break;
     case EMC_JOINT_UNHOME_TYPE:
 	((EMC_JOINT_UNHOME *) buffer)->update(cms);
 	break;
@@ -506,10 +506,10 @@ const char *emc_symbol_lookup(uint32_t type)
 	return "EMC_JOINT_ENABLE";
     case EMC_JOINT_HALT_TYPE:
 	return "EMC_JOINT_HALT";
+    case EMC_JOINT_SET_HOMED_TYPE:
+        return "EMC_JOINT_SET_HOMED";
     case EMC_JOINT_HOME_TYPE:
 	return "EMC_JOINT_HOME";
-    case EMC_JOINT_SET_HOMED_TYPE:
-	return "EMC_JOINT_SET_HOMED";
     case EMC_JOINT_UNHOME_TYPE:
 	return "EMC_JOINT_UNHOME";
     case EMC_JOG_CONT_TYPE:
